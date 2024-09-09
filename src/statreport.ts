@@ -36,3 +36,5 @@ export async function cleanUpDuplicateStats() {
 
   await statsDb.close();
 }
+
+cleanUpDuplicateStats();
