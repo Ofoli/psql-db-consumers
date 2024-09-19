@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 dotenv.config();
-
+export const BLAST_UPDATE_URL = "https://logs.nalosolutions.com/statreport/";
 export const SYSLOG = path.join(__dirname, "..", "logs", "syslog.log");
 export const JOBIDS_FILE_PATH = path.join(
   __dirname,

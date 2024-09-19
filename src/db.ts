@@ -1,6 +1,7 @@
 import { Pool, PoolClient } from "pg";
 import { config } from "./contants";
 import { logger } from "./utils";
+import type { BlastUpdateData } from "./types";
 
 class DB {
   protected error: string = "";
@@ -47,8 +48,8 @@ export class StatReportDbConn extends DB {
     if (!this.client) await this.connect();
   }
 
-  public async getStatusBreakdown(jobid: string) {
-    const action = { action: "getStatusBreakdown", data: { jobid } };
+  public async getStatIds(jobid: string): Promise<Array<{ id: number }>> {
+    const action = { action: "getStatIds", data: { jobid } };
     logger.info(action);
 
     await this.instantiate();
@@ -57,7 +58,7 @@ export class StatReportDbConn extends DB {
       return [];
     }
 
-    const sql = `SELECT id, hour FROM sms_web_reports WHERE job_id = '${jobid}' ORDER BY id ASC`;
+    const sql = `SELECT id FROM sms_web_reports WHERE job_id = '${jobid}'`;
     const response = await this.query(sql);
     if (!response.status) {
       logger.error({ ...action, err: response.err });
@@ -75,5 +76,18 @@ export class StatReportDbConn extends DB {
         err: response.err,
       });
     }
+  }
+  public async updateStatsCounts(id: number, statCounts: BlastUpdateData) {
+    const action = { action: "updateStatsCounts", data: { id, statCounts } };
+    const { expired, delivered, undelivered, rejected } = statCounts;
+    const sql = `UPDATE sms_web_reports 
+                 SET acknowledged = 0,
+                  expired = ${expired},
+                  rejected = ${rejected ?? 0},
+                  delivered = ${delivered},
+                  undelivered = ${undelivered}
+                 WHERE id = '${id}'`;
+    const response = await this.query(sql);
+    if (!response.status) logger.error({ ...action, err: response.err, sql });
   }
 }
