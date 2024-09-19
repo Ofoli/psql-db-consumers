@@ -82,10 +82,10 @@ export class StatReportDbConn extends DB {
     const { expired, delivered, undelivered, rejected } = statCounts;
     const sql = `UPDATE sms_web_reports 
                  SET acknowledged = 0,
-                  expired = ${expired},
+                  expired = ${expired ?? 0},
                   rejected = ${rejected ?? 0},
-                  delivered = ${delivered},
-                  undelivered = ${undelivered}
+                  delivered = ${delivered ?? 0},
+                  undelivered = ${undelivered ?? 0}
                  WHERE id = '${id}'`;
     const response = await this.query(sql);
     if (!response.status) logger.error({ ...action, err: response.err, sql });
