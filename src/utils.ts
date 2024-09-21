@@ -1,10 +1,12 @@
 import winston from "winston";
 import crypto from "crypto";
 import axios, { type AxiosError } from "axios";
-import { SYSLOG, BLAST_UPDATE_URL } from "./contants";
+import { SYSLOG, config } from "./contants";
 import type {
   BlastUpdateAPIFailedResponse,
   BlastUpdateAPISuccessResponse,
+  EmailInvoiceReport,
+  Period,
 } from "./types";
 
 const { timestamp, printf, combine } = winston.format;
@@ -48,5 +50,21 @@ async function fetchBlastUpdate(url: string, payload: Record<string, string>) {
 
 export function getStatReport(jobid: string) {
   const values = createUserAndApiKey(jobid);
-  return fetchBlastUpdate(BLAST_UPDATE_URL, values);
+  return fetchBlastUpdate(config.urls.blastUpdate, values);
+}
+export function getReportPeriod(): Period {
+  const now = new Date();
+  const startDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endDay = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const toFormat = (d: Date) => d.toISOString().slice(0, 10);
+  return { startAt: toFormat(startDay), endAt: toFormat(endDay) };
+}
+export async function sendEmailInvoiceReports(report: EmailInvoiceReport) {
+  try {
+    const { data } = await axios.post(config.urls.invoiceBackend, report);
+    logger.info({ action: "sendEmailInvoiceReports", response: data });
+  } catch (error) {
+    const { message } = error as Error;
+    logger.error({ action: "sendEmailInvoiceReports", response: message });
+  }
 }
