@@ -1,3 +1,5 @@
+export type Period = { startAt: string; endAt: string };
+export type EmailReport = Array<Record<string, string>>;
 export type BlastUpdatePayload = {
   user: string;
   key: string;
@@ -15,4 +17,9 @@ export type BlastUpdateAPIFailedResponse = { status: false; message: string };
 export type BlastUpdateAPISuccessResponse = {
   status: true;
   data: BlastUpdateData;
+};
+export type EmailInvoiceReport = {
+  month: string;
+  apiReport: EmailReport;
+  webReport: EmailReport;
 };

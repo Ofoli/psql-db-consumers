@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import path from "path";
 
 dotenv.config();
-export const BLAST_UPDATE_URL = "https://logs.nalosolutions.com/statreport/";
 export const SYSLOG = path.join(__dirname, "..", "logs", "syslog.log");
 export const JOBIDS_FILE_PATH = path.join(
   __dirname,
@@ -17,5 +16,9 @@ export const config = {
     user: process.env.REPORT_DB_USER!,
     password: process.env.REPORT_DB_PASS!,
     database: process.env.REPORT_DB_NAME!,
+  },
+  urls: {
+    blastUpdate: process.env.BLAST_UPDATE_URL!,
+    invoiceBackend: process.env.INVOICE_BACKEND_URL!,
   },
 };
