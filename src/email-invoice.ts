@@ -9,8 +9,8 @@ async function fetchEmailInvoice() {
 
   const report = {
     month: period.startAt.slice(0, 7),
-    apiReport: apiInvoiceReport,
-    webReport: webInvoiceReport,
+    api_report: apiInvoiceReport,
+    web_report: webInvoiceReport,
   };
 
   await emailReport.close();

@@ -13,15 +13,14 @@ export async function FixStatusUpdate() {
   for (const job of jobs) {
     if (!job || job.includes("sing")) continue;
 
+    const response = await getStatReport(job);
+    if (!response.status) continue;
+
     const statIds = await statsDb.getStatIds(job);
     if (statIds.length === 0) continue;
 
     const selected = statIds.pop()!;
     await statsDb.deleteDuplicateRecords(statIds.map((e) => e.id));
-
-    const response = await getStatReport(job);
-    if (!response.status) continue;
-
     await statsDb.updateStatsCounts(selected.id, response.data);
   }
 
