@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 
-dotenv.config();
+const ENV_FILE_PATH = path.join(__dirname, "..", ".env");
 export const SYSLOG = path.join(__dirname, "..", "logs", "syslog.log");
 export const JOBIDS_FILE_PATH = path.join(
   __dirname,
@@ -9,6 +9,9 @@ export const JOBIDS_FILE_PATH = path.join(
   "files",
   "jobids.txt"
 );
+
+dotenv.config({ path: ENV_FILE_PATH });
+
 export const config = {
   db: {
     host: process.env.REPORT_DB_HOST!,
