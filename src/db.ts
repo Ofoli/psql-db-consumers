@@ -1,12 +1,15 @@
 import { Pool, PoolClient } from "pg";
 import { config } from "./contants";
 import { logger } from "./utils";
+import type { BlastUpdateData, Period, EmailReport } from "./types";
 
 class DB {
   protected error: string = "";
   protected client: PoolClient | null = null;
 
   protected async connect() {
+    if (this.client) return;
+
     try {
       const dbpool = new Pool({
         host: config.db.host,
@@ -43,21 +46,17 @@ class DB {
 }
 
 export class StatReportDbConn extends DB {
-  private async instantiate() {
-    if (!this.client) await this.connect();
-  }
-
-  public async getStatusBreakdown(jobid: string) {
-    const action = { action: "getStatusBreakdown", data: { jobid } };
+  public async getStatIds(jobid: string): Promise<Array<{ id: number }>> {
+    const action = { action: "getStatIds", data: { jobid } };
     logger.info(action);
 
-    await this.instantiate();
+    await this.connect();
     if (this.error) {
       logger.error({ ...action, err: this.error });
       return [];
     }
 
-    const sql = `SELECT id, hour FROM sms_web_reports WHERE job_id = '${jobid}' ORDER BY id ASC`;
+    const sql = `SELECT id FROM sms_web_reports WHERE job_id = '${jobid}'`;
     const response = await this.query(sql);
     if (!response.status) {
       logger.error({ ...action, err: response.err });
@@ -75,5 +74,54 @@ export class StatReportDbConn extends DB {
         err: response.err,
       });
     }
+  }
+  public async updateStatsCounts(id: number, statCounts: BlastUpdateData) {
+    const action = { action: "updateStatsCounts", data: { id, statCounts } };
+    const { expired, delivered, undelivered, rejected } = statCounts;
+    const sql = `UPDATE sms_web_reports 
+                 SET acknowledged = 0,
+                  expired = ${expired ?? 0},
+                  rejected = ${rejected ?? 0},
+                  delivered = ${delivered ?? 0},
+                  undelivered = ${undelivered ?? 0}
+                 WHERE id = '${id}'`;
+    const response = await this.query(sql);
+    if (!response.status) logger.error({ ...action, err: response.err, sql });
+  }
+}
+
+export class EmailReportDb extends DB {
+  public async fetchMonthlyStats(
+    type: "api" | "web",
+    period: Period
+  ): Promise<EmailReport> {
+    const action = { action: "fetchMonthlyStats", data: { type, period } };
+    const tableName = `email_${type}_reports`;
+    const { startAt, endAt } = period;
+    const sql = `SELECT username, 
+                  sum(sent) as SENT,
+                  sum(delivered) as DELIVERED,
+                  sum(clicked) as CLICKED,
+                  sum(opened) as OPENED,  
+                  sum(bounced) as BOUNCED, 
+                  sum(rejected) as REJECTED,
+                  sum(complaint) as COMPLAINT,
+                  sum(render_failure) + sum(failed) as FAILED
+                FROM ${tableName}
+                WHERE hour >= '${startAt}' and hour < '${endAt}'
+                GROUP BY username;`;
+
+    await this.connect();
+    if (this.error) {
+      logger.error({ ...action, err: this.error });
+      return [];
+    }
+
+    const response = await this.query(sql);
+    if (!response.status) {
+      logger.error({ ...action, err: response.err });
+      return [];
+    }
+    return response.data?.rows ?? [];
   }
 }
