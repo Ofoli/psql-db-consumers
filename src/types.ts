@@ -20,6 +20,6 @@ export type BlastUpdateAPISuccessResponse = {
 };
 export type EmailInvoiceReport = {
   month: string;
-  api_report: EmailReport;
-  web_report: EmailReport;
+  api_reports: EmailReport;
+  web_reports: EmailReport;
 };
