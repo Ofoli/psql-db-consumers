@@ -34,18 +34,23 @@ const createUserAndApiKey = (jobid: string) => {
   const key = crypto.createHash("md5").update(hashStr).digest("hex");
   return { user, key, jobid };
 };
-
-async function fetchBlastUpdate(url: string, payload: Record<string, string>) {
+const postApiRequest = async (url: string, values: Record<string, {}>) => {
   try {
-    const res = await axios.post(url, payload);
-    return { status: true, ...res.data } as BlastUpdateAPISuccessResponse;
+    const { data } = await axios.post(url, values);
+    return { status: true, data };
   } catch (err) {
     const { response } = err as AxiosError;
-    let error = response?.data;
-    if (!error) error = { status: false, message: (err as Error).message };
-    logger.error({ action: "fetchBlastUpdate", err: error });
-    return error as BlastUpdateAPIFailedResponse;
+    const error = response?.data ?? (err as Error).message;
+    return { status: false, message: JSON.stringify(error) };
   }
+};
+async function fetchBlastUpdate(url: string, payload: Record<string, string>) {
+  const res = await postApiRequest(url, payload);
+  if (res.status)
+    return { ...res, ...res.data } as BlastUpdateAPISuccessResponse;
+
+  logger.error({ action: "fetchBlastUpdate", err: res.message });
+  return res as BlastUpdateAPIFailedResponse;
 }
 
 export function getStatReport(jobid: string) {
@@ -60,11 +65,6 @@ export function getReportPeriod(): Period {
   return { startAt: toFormat(startDay), endAt: toFormat(endDay) };
 }
 export async function sendEmailInvoiceReports(report: EmailInvoiceReport) {
-  try {
-    const { data } = await axios.post(config.urls.invoiceBackend, report);
-    logger.info({ action: "sendEmailInvoiceReports", response: data });
-  } catch (error) {
-    const { message } = error as Error;
-    logger.error({ action: "sendEmailInvoiceReports", response: message });
-  }
+  const response = await postApiRequest(config.urls.invoiceBackend, report);
+  logger.info({ action: "sendEmailInvoiceReports", response });
 }
